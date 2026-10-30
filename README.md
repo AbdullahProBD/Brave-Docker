@@ -1,93 +1,184 @@
-# Brave on Railway (with custom login page)
+<div align="center">
 
-Runs [`linuxserver/brave`](https://docs.linuxserver.io/images/docker-brave/) on [Railway](https://railway.app) behind a small gateway that serves your own login page. The browser is streamed to you in the web browser through KasmVNC.
+# Brave-Docker
+
+**Brave browser in your browser. Self-hosted, secured behind a custom login page.**
+
+[![Docker](https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white)](#quick-start)
+[![Railway](https://img.shields.io/badge/deploy-Railway-0B0D0E?logo=railway&logoColor=white)](#deploy-to-railway)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
+</div>
+
+Runs [`linuxserver/brave`](https://docs.linuxserver.io/images/docker-brave/) streamed to any web browser through KasmVNC, protected by a small Node.js gateway that serves a fully custom, restylable login page. Build it from source on your own machine or server with a single command, or deploy it to Railway.
 
 ```
-Internet -> Railway (HTTPS) -> gateway :8080 (login page + sessions) -> KasmVNC/Brave :3000 (internal only)
+Internet ──> gateway :8080 (login page + sessions) ──> KasmVNC / Brave :3000 (internal only)
 ```
 
-KasmVNC's built-in prompt is plain HTTP basic auth and can't be restyled, so the gateway handles login instead and only proxies requests (including the WebSocket stream) once you're signed in.
+KasmVNC's built-in prompt is plain HTTP basic auth and cannot be restyled, so the gateway handles login and only proxies traffic (including the WebSocket stream) after you sign in.
 
-## Project layout
+## Features
 
+- Custom, responsive login page with dark/light mode
+- Signed `HttpOnly` session cookies, with `Secure` over HTTPS
+- Brute-force lockout (8 failures per IP locks it out for 15 minutes)
+- WebSocket stream is authenticated too, not just the page
+- Fails closed: no password configured means no access
+- Built from source with Docker Compose, a Makefile, or plain `docker build`
+- Railway-ready, with health check and config included
+- Persistent browser profile via a Docker volume
+
+## Requirements
+
+- [Docker](https://docs.docker.com/get-docker/) 20.10+ with the Compose plugin (`docker compose`)
+- 2 GB RAM recommended (a full browser plus desktop is heavy)
+- `git` (and optionally `make` and `openssl`)
+
+## Quick start
+
+```bash
+# 1. Clone
+git clone https://github.com/AbdullahProBD/Brave-Docker.git
+cd Brave-Docker
+
+# 2. Configure (creates .env with a random SESSION_SECRET)
+make setup            # or: cp .env.example .env
+nano .env             # set LOGIN_PASSWORD
+
+# 3. Build from source and run
+docker compose up -d --build
 ```
-.
-├── Dockerfile    # everything is embedded here: gateway server, login page, service script
-└── README.md
+
+Open **http://localhost:8080** and sign in with `admin` and the password you set.
+
+> Without `make`: run `cp .env.example .env`, then edit `.env` and set `LOGIN_PASSWORD` (and `SESSION_SECRET`, generated with `openssl rand -hex 32`).
+
+## Commands
+
+| Command | What it does |
+|---|---|
+| `make setup` | Create `.env` from the template with a random `SESSION_SECRET` |
+| `make up` | Build (if needed) and start in the background |
+| `make down` | Stop and remove the container (data is kept) |
+| `make restart` | Restart the container |
+| `make logs` | Follow the logs |
+| `make status` | Show container status and health |
+| `make shell` | Open a shell inside the container |
+| `make secret` | Print a random 64-character secret |
+| `make clean` | Remove container, image **and all data** |
+
+Without Make:
+
+```bash
+docker compose up -d --build     # start
+docker compose logs -f           # logs
+docker compose down              # stop
+docker compose down -v           # stop and delete the browser profile
 ```
 
-The `Dockerfile` uses heredocs (`COPY <<'EOF' ...`), which need BuildKit. Railway builds with BuildKit, and the `# syntax=docker/dockerfile:1` line on the first line enables the feature. Keep that line at the very top.
+### Plain Docker (no Compose)
+
+```bash
+docker build -t brave-docker .
+docker run -d --name brave-docker \
+  -p 8080:8080 \
+  -e PORT=8080 \
+  -e LOGIN_PASSWORD='change-me' \
+  -e SESSION_SECRET="$(openssl rand -hex 32)" \
+  -v brave-config:/config \
+  --shm-size=1g \
+  --restart unless-stopped \
+  brave-docker
+```
+
+### Updating
+
+```bash
+git pull
+docker compose build --pull
+docker compose up -d
+```
+
+## Configuration
+
+Set these in `.env` (Compose) or in your platform's variables (Railway, etc.).
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `LOGIN_PASSWORD` | **Yes** | none | Password for the login page |
+| `LOGIN_USER` | No | `admin` | Username |
+| `SESSION_SECRET` | Recommended | random per start | Signs session cookies. Set it so logins survive restarts |
+| `SESSION_HOURS` | No | `168` | Login lifetime in hours (7 days) |
+| `HOST_PORT` | No | `8080` | Port exposed on your machine (Compose only) |
+| `PORT` | Railway only | `8080` | Gateway listening port |
+| `PUID` / `PGID` | No | `1000` | User and group the browser runs as |
+| `TZ` | No | `Etc/UTC` | Container time zone |
+| `TITLE` | No | `Brave` | Browser tab title |
+| `BRAVE_CLI` | No | `--disable-dev-shm-usage` | Extra flags passed to Brave |
+| `UPSTREAM` | No | `http://127.0.0.1:3000` | Where the gateway forwards traffic |
+
+> Do **not** set `PASSWORD` or `CUSTOM_USER`. Those enable KasmVNC's own basic-auth prompt on top of the login page.
 
 ## Deploy to Railway
 
-1. Push this folder to a GitHub repo.
-2. In Railway, create a **New Project -> Deploy from GitHub repo** and pick the repo. Railway detects the `Dockerfile` automatically.
-3. Open the service's **Variables** tab and add:
+1. Fork or push this repository to GitHub.
+2. In Railway: **New Project → Deploy from GitHub repo** and select it. Railway detects the `Dockerfile` (and reads `railway.json`).
+3. Open **Variables** and add `LOGIN_PASSWORD`, `SESSION_SECRET` and `PORT=8080`.
+4. **Settings → Networking → Generate Domain**.
+5. **Settings → Volumes**: attach a volume mounted at `/config` to keep your profile, bookmarks and logins.
 
-   | Variable | Required | Description |
-   |---|---|---|
-   | `LOGIN_PASSWORD` | Yes | Password for the login page. |
-   | `LOGIN_USER` | No | Username. Defaults to `admin`. |
-   | `SESSION_SECRET` | No | Long random string used to sign session cookies. Set it so logins survive redeploys. |
-   | `SESSION_HOURS` | No | How long a login lasts. Defaults to `168` (7 days). |
-   | `PORT` | Yes | Set to `8080`. This is the gateway's port. |
+## Project structure
 
-   Generate a secret with: `openssl rand -hex 32`
-
-4. Do **not** set `PASSWORD` or `CUSTOM_USER`. Those turn on KasmVNC's own basic-auth prompt on top of the login page.
-5. In **Settings -> Networking**, click **Generate Domain**.
-6. (Recommended) In **Settings -> Volumes**, attach a volume mounted at `/config` so your Brave profile, bookmarks and logins persist across redeploys.
-
-Open the generated domain and sign in.
-
-## Other environment variables
-
-| Variable | Default | Description |
-|---|---|---|
-| `PUID` / `PGID` | `1000` | User and group the browser runs as. |
-| `TZ` | `Etc/UTC` | Container time zone. |
-| `TITLE` | `Brave` | Title shown in the browser tab. |
-| `BRAVE_CLI` | `--disable-dev-shm-usage` | Extra command-line flags passed to Brave. |
-| `UPSTREAM` | `http://127.0.0.1:3000` | Where the gateway forwards traffic (KasmVNC). |
-
-## Security notes
-
-- **Fail closed:** if `LOGIN_PASSWORD` is empty, the gateway returns a 503 error page instead of exposing the browser.
-- **Brute-force protection:** 8 failed logins from one IP locks that IP out for 15 minutes. The counter is in memory, so it resets when the service restarts.
-- **Sessions:** HMAC-signed, `HttpOnly`, `SameSite=Lax` cookies, and `Secure` when served over HTTPS. Without `SESSION_SECRET`, a random one is generated on each start and everyone is logged out after a redeploy.
-- **WebSocket auth:** the remote-desktop stream is also protected, not just the page.
-- **Single user:** there is one username and password. For multiple users, put a proper identity provider in front instead.
-- Anyone who signs in gets a full browser running on your server, with whatever accounts you log into inside it. Use a strong password.
-
-## Useful routes
-
-- `/login` : the sign-in page
-- `/logout` : ends your session
-- `/healthz` : returns `ok` (handy for Railway health checks)
+```
+.
+├── Dockerfile                      # Image build (Brave + Node gateway)
+├── docker-compose.yml              # One-command local/server deployment
+├── Makefile                        # Shortcuts for common tasks
+├── railway.json                    # Railway build and health check config
+├── .env.example                    # Configuration template
+├── gateway/
+│   ├── server.js                   # Auth, sessions, rate limiting, reverse proxy
+│   ├── login.html                  # Login page (edit to restyle)
+│   └── package.json
+└── rootfs/
+    └── custom-services.d/gateway   # s6 service that starts the gateway
+```
 
 ## Customizing the login page
 
-In the `Dockerfile`, edit the HTML/CSS between `COPY <<'EOF_LOGIN' /opt/gateway/login.html` and `EOF_LOGIN`. Keep the `{{ERROR}}` and `{{ERROR_CLASS}}` placeholders, since the server fills them in when a login fails. The form must keep posting `username` and `password` to `/login`.
+Edit `gateway/login.html` and rebuild (`make up`). Keep the `{{ERROR}}` and `{{ERROR_CLASS}}` placeholders, and keep the form posting `username` and `password` to `/login`.
+
+## Routes
+
+| Route | Purpose |
+|---|---|
+| `/login` | Sign-in page |
+| `/logout` | End the session |
+| `/healthz` | Returns `ok` (used for health checks) |
+
+## Security notes
+
+- Always use a strong `LOGIN_PASSWORD`. Anyone who signs in controls a full browser on your server and any accounts logged into it.
+- Put the service behind HTTPS (Railway does this automatically; for your own server use Caddy, Nginx or Traefik) so the session cookie is flagged `Secure`.
+- The brute-force counter is in memory and resets on restart.
+- There is a single user. For multiple users, put a proper identity provider in front.
+- Never commit `.env`. It is already in `.gitignore`.
 
 ## Troubleshooting
 
-- **"Browser is starting up" message:** Brave takes a little while to boot. Refresh after a few seconds.
-- **"Gateway is not configured" message:** `LOGIN_PASSWORD` isn't set in Railway Variables.
-- **Gateway not reachable (502 from Railway):** make sure `PORT=8080` is set and the domain targets that port.
-- **Browser crashes or won't launch:** check the deploy logs. Railway can't set `--shm-size`, so `--disable-dev-shm-usage` is already included. If the logs show sandbox errors, add `--no-sandbox` to `BRAVE_CLI` in the `Dockerfile`.
-- **Out of memory:** a full browser plus desktop is heavy. Give the service at least 1-2 GB of RAM.
-- **A second password prompt appears after login:** remove `PASSWORD` and `CUSTOM_USER` from Railway Variables.
-- **Logged out after every deploy:** set `SESSION_SECRET` to a fixed value.
+| Problem | Fix |
+|---|---|
+| `LOGIN_PASSWORD` error on `docker compose up` | Create `.env` and set `LOGIN_PASSWORD` |
+| "Browser is starting up" | Brave needs a few seconds to boot. Refresh |
+| "Gateway is not configured" | `LOGIN_PASSWORD` is empty |
+| 502 on Railway | Set `PORT=8080` and make sure the domain targets it |
+| Browser crashes or won't launch | Check `make logs`. If you see sandbox errors, add `--no-sandbox` to `BRAVE_CLI` |
+| Out of memory | Give the host or service at least 1-2 GB RAM |
+| Second password prompt after login | Remove `PASSWORD` and `CUSTOM_USER` |
+| Logged out after every restart | Set a fixed `SESSION_SECRET` |
+| Port 8080 already in use | Set `HOST_PORT=8081` in `.env` |
 
-## Local test
+## License
 
-```bash
-docker build -t brave-gateway .
-docker run --rm -p 8080:8080 \
-  -e PORT=8080 \
-  -e LOGIN_PASSWORD=change-me \
-  --shm-size=1g \
-  brave-gateway
-```
-
-Then open http://localhost:8080 (the `Secure` cookie flag only applies over HTTPS, so plain HTTP works locally).
+[MIT](LICENSE) © AbdullahProBD

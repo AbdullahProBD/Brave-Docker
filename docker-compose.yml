@@ -1,0 +1,26 @@
+services:
+  brave:
+    build:
+      context: .
+    image: brave-docker:latest
+    container_name: brave-docker
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT:-8080}:8080"
+    environment:
+      PORT: "8080"
+      LOGIN_USER: "${LOGIN_USER:-admin}"
+      LOGIN_PASSWORD: "${LOGIN_PASSWORD:?Set LOGIN_PASSWORD in your .env file}"
+      SESSION_SECRET: "${SESSION_SECRET:-}"
+      SESSION_HOURS: "${SESSION_HOURS:-168}"
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-1000}"
+      TZ: "${TZ:-Etc/UTC}"
+      TITLE: "${TITLE:-Brave}"
+      BRAVE_CLI: "${BRAVE_CLI:---disable-dev-shm-usage}"
+    shm_size: "1gb"
+    volumes:
+      - brave-config:/config
+
+volumes:
+  brave-config:

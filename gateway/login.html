@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Sign in · Secure Browser</title>
+<style>
+  :root {
+    --bg: #0e1116; --card: #161b22; --border: #262d38;
+    --text: #e8ecf1; --muted: #8b95a5;
+    --accent: #ff6a2b; --accent-hover: #ff7f48;
+    --error-bg: #3a1a1a; --error-text: #ff9b9b;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f3f5f8; --card: #ffffff; --border: #dfe3ea;
+      --text: #151a21; --muted: #667085;
+      --error-bg: #fdecec; --error-text: #b42318;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: grid; place-items: center; padding: 16px;
+    background:
+      radial-gradient(900px 500px at 15% -10%, rgba(255,106,43,.14), transparent 60%),
+      radial-gradient(700px 500px at 100% 110%, rgba(255,106,43,.08), transparent 60%),
+      var(--bg);
+    color: var(--text);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .card {
+    width: 100%; max-width: 380px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 32px 28px;
+    box-shadow: 0 20px 50px rgba(0,0,0,.25);
+  }
+  .logo {
+    width: 52px; height: 52px; display: grid; place-items: center;
+    margin: 0 auto 18px; border-radius: 14px;
+    background: linear-gradient(135deg, var(--accent), #ff9a5c);
+  }
+  .logo svg { width: 26px; height: 26px; stroke: #fff; }
+  h1 { margin: 0 0 4px; font-size: 22px; text-align: center; letter-spacing: -.01em; }
+  .sub { margin: 0 0 24px; text-align: center; color: var(--muted); font-size: 14px; }
+  label { display: block; margin: 0 0 6px; font-size: 13px; font-weight: 600; }
+  .field { margin-bottom: 16px; position: relative; }
+  input {
+    width: 100%; padding: 11px 12px; font: inherit; color: var(--text);
+    background: transparent; border: 1px solid var(--border); border-radius: 10px;
+    outline: none; transition: border-color .15s, box-shadow .15s;
+  }
+  input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,106,43,.22); }
+  #password { padding-right: 64px; }
+  .toggle {
+    position: absolute; right: 8px; bottom: 7px; padding: 4px 8px;
+    font: inherit; font-size: 12px; font-weight: 600; color: var(--muted);
+    background: none; border: 0; border-radius: 6px; cursor: pointer;
+  }
+  .toggle:hover { color: var(--text); }
+  button.primary {
+    width: 100%; margin-top: 4px; padding: 12px; font: inherit; font-weight: 600;
+    color: #fff; background: var(--accent); border: 0; border-radius: 10px; cursor: pointer;
+    transition: background .15s, transform .05s;
+  }
+  button.primary:hover { background: var(--accent-hover); }
+  button.primary:active { transform: translateY(1px); }
+  button.primary:disabled { opacity: .6; cursor: default; }
+  .error {
+    display: none; margin-bottom: 16px; padding: 10px 12px; font-size: 13px;
+    color: var(--error-text); background: var(--error-bg); border-radius: 10px;
+  }
+  .error.show { display: block; }
+  .foot { margin-top: 20px; text-align: center; font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="logo" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="4" y="11" width="16" height="9" rx="2"/>
+      <path d="M8 11V8a4 4 0 0 1 8 0v3"/>
+    </svg>
+  </div>
+  <h1>Secure Browser</h1>
+  <p class="sub">Sign in to continue</p>
+
+  <form method="post" action="/login" autocomplete="on" id="form">
+    <div class="error {{ERROR_CLASS}}" role="alert">{{ERROR}}</div>
+    <div class="field">
+      <label for="username">Username</label>
+      <input id="username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus>
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required>
+      <button class="toggle" type="button" id="toggle" aria-label="Show password">Show</button>
+    </div>
+    <button class="primary" type="submit" id="submit">Sign in</button>
+  </form>
+  <div class="foot">Authorized access only</div>
+</main>
+<script>
+  var pw = document.getElementById('password');
+  var toggle = document.getElementById('toggle');
+  toggle.addEventListener('click', function () {
+    var show = pw.type === 'password';
+    pw.type = show ? 'text' : 'password';
+    toggle.textContent = show ? 'Hide' : 'Show';
+    toggle.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+  });
+  document.getElementById('form').addEventListener('submit', function () {
+    var b = document.getElementById('submit');
+    b.disabled = true;
+    b.textContent = 'Signing in…';
+  });
+</script>
+</body>
+</html>
