@@ -12,15 +12,11 @@ KasmVNC's built-in prompt is plain HTTP basic auth and can't be restyled, so the
 
 ```
 .
-├── Dockerfile
-├── README.md
-├── custom-services.d/
-│   └── gateway          # s6 service script that starts the gateway
-└── gateway/
-    ├── package.json
-    ├── server.js        # login, sessions, rate limiting, reverse proxy
-    └── login.html       # the login page (edit this to restyle it)
+├── Dockerfile    # everything is embedded here: gateway server, login page, service script
+└── README.md
 ```
+
+The `Dockerfile` uses heredocs (`COPY <<'EOF' ...`), which need BuildKit. Railway builds with BuildKit, and the `# syntax=docker/dockerfile:1` line on the first line enables the feature. Keep that line at the very top.
 
 ## Deploy to Railway
 
@@ -71,7 +67,7 @@ Open the generated domain and sign in.
 
 ## Customizing the login page
 
-Edit `gateway/login.html`. Keep the `{{ERROR}}` and `{{ERROR_CLASS}}` placeholders, since the server fills them in when a login fails. The form must keep posting `username` and `password` to `/login`.
+In the `Dockerfile`, edit the HTML/CSS between `COPY <<'EOF_LOGIN' /opt/gateway/login.html` and `EOF_LOGIN`. Keep the `{{ERROR}}` and `{{ERROR_CLASS}}` placeholders, since the server fills them in when a login fails. The form must keep posting `username` and `password` to `/login`.
 
 ## Troubleshooting
 
