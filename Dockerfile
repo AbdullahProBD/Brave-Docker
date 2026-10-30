@@ -18,7 +18,7 @@ ENV PUID=1000 \
     PGID=1000 \
     TZ=Etc/UTC \
     TITLE="Brave" \
-    BRAVE_CLI="--disable-dev-shm-usage"
+    BRAVE_CLI="--disable-dev-shm-usage --no-sandbox"
 
 # Node.js runtime for the gateway
 RUN apt-get update \

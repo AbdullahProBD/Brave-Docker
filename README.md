@@ -42,8 +42,9 @@ KasmVNC's built-in prompt is plain HTTP basic auth and cannot be restyled, so th
 git clone https://github.com/AbdullahProBD/Brave-Docker.git
 cd Brave-Docker
 
-# 2. Configure (creates .env with a random SESSION_SECRET)
-make setup            # or: cp .env.example .env
+# 2. Configure
+cp .env.example .env
+sed -i "s/^SESSION_SECRET=.*/SESSION_SECRET=$(openssl rand -hex 32)/" .env
 nano .env             # set LOGIN_PASSWORD
 
 # 3. Build from source and run
@@ -52,7 +53,7 @@ docker compose up -d --build
 
 Open **http://localhost:8080** and sign in with `admin` and the password you set.
 
-> Without `make`: run `cp .env.example .env`, then edit `.env` and set `LOGIN_PASSWORD` (and `SESSION_SECRET`, generated with `openssl rand -hex 32`).
+> Have `make`? Run `make setup` instead of step 2, then `make up`. Install it with `apt install -y make` if missing.
 
 ## Commands
 
@@ -86,6 +87,7 @@ docker run -d --name brave-docker \
   -e PORT=8080 \
   -e LOGIN_PASSWORD='change-me' \
   -e SESSION_SECRET="$(openssl rand -hex 32)" \
+  -e BRAVE_CLI='--disable-dev-shm-usage --no-sandbox' \
   -v brave-config:/config \
   --shm-size=1g \
   --restart unless-stopped \
@@ -115,7 +117,7 @@ Set these in `.env` (Compose) or in your platform's variables (Railway, etc.).
 | `PUID` / `PGID` | No | `1000` | User and group the browser runs as |
 | `TZ` | No | `Etc/UTC` | Container time zone |
 | `TITLE` | No | `Brave` | Browser tab title |
-| `BRAVE_CLI` | No | `--disable-dev-shm-usage` | Extra flags passed to Brave |
+| `BRAVE_CLI` | No | `--disable-dev-shm-usage --no-sandbox` | Extra flags passed to Brave |
 | `UPSTREAM` | No | `http://127.0.0.1:3000` | Where the gateway forwards traffic |
 
 > Do **not** set `PASSWORD` or `CUSTOM_USER`. Those enable KasmVNC's own basic-auth prompt on top of the login page.
@@ -173,7 +175,7 @@ Edit `gateway/login.html` and rebuild (`make up`). Keep the `{{ERROR}}` and `{{E
 | "Browser is starting up" | Brave needs a few seconds to boot. Refresh |
 | "Gateway is not configured" | `LOGIN_PASSWORD` is empty |
 | 502 on Railway | Set `PORT=8080` and make sure the domain targets it |
-| Browser crashes or won't launch | Check `make logs`. If you see sandbox errors, add `--no-sandbox` to `BRAVE_CLI` |
+| Browser crashes or won't launch | Check `docker compose logs -f`. `--no-sandbox` is already enabled by default |
 | Out of memory | Give the host or service at least 1-2 GB RAM |
 | Second password prompt after login | Remove `PASSWORD` and `CUSTOM_USER` |
 | Logged out after every restart | Set a fixed `SESSION_SECRET` |

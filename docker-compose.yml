@@ -17,7 +17,7 @@ services:
       PGID: "${PGID:-1000}"
       TZ: "${TZ:-Etc/UTC}"
       TITLE: "${TITLE:-Brave}"
-      BRAVE_CLI: "${BRAVE_CLI:---disable-dev-shm-usage}"
+      BRAVE_CLI: "${BRAVE_CLI:---disable-dev-shm-usage --no-sandbox}"
     shm_size: "1gb"
     volumes:
       - brave-config:/config
