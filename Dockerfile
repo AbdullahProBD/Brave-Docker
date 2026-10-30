@@ -22,7 +22,7 @@ ENV PUID=1000 \
 
 # Node.js runtime for the gateway
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends nodejs npm \
+    && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # Gateway dependencies (separate layer so code changes don't reinstall them)
