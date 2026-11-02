@@ -4,11 +4,12 @@ emoji: 🚀
 colorFrom: purple
 colorTo: blue
 sdk: docker
-app_port: 7861
+app_port: 7860
 pinned: true
 license: mit
 secrets:
- 
+  - LOGIN_PASSWORD
+  - SESSION_SECRET
 ---
 
 # Brave-Docker for Hugging Face Spaces
