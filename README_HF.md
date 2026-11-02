@@ -1,3 +1,16 @@
+---
+title: Brave-Docker
+emoji: 🚀
+colorFrom: purple
+colorTo: blue
+sdk: docker
+app_port: 7861
+pinned: true
+license: mit
+secrets:
+ 
+---
+
 # Brave-Docker for Hugging Face Spaces
 
 This repository is designed to run a Brave browser behind a custom login gateway inside a Docker-based Hugging Face Space.
